@@ -1,0 +1,36 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: forcarfor
+  annotations:
+    # Add these two lines
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - forcarfor.dir.nebulou.dev
+        - forcarfor.ser.nebulou.dev
+      secretName: forcarfor-tls
+  rules:
+    #will be replaced by some original domain that i can touch okay
+    - host: forcarfor.dir.nebulou.dev
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: forcarfor
+                port:
+                  number: 3001
+    - host: forcarfor.ser.nebulou.dev
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: forcarfor
+                port:
+                  number: 3000

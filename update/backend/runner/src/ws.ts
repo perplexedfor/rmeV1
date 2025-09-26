@@ -3,11 +3,11 @@ import { Server as HttpServer} from "http";
 import { fetchS3Folder, saveToS3 } from "./aws";
 import path from "path";
 import { TerminalManager } from "./pty";
-import { fetchDir,fetchFile,saveFile } from "./fs";
+import { fetchDir,fetchFileContent,saveFile } from "./fs";
 
 const terminalManager = new TerminalManager();
 
-export function initWS(server : HttpServer){
+export function initWs(server : HttpServer){
     const io = new Server(server,{
         cors : {
             origin: "*",
@@ -16,8 +16,10 @@ export function initWS(server : HttpServer){
     });
 
     io.on("connection", async (socket: Socket) => {
+        //there should be auth checks here to prevent the access
+        const host = socket.handshake.headers.host;
 
-        const replId = socket.handshake.query.replId as string;
+        const replId = host?.split('.')[0];
 
         if(!replId){
             socket.disconnect();
@@ -25,10 +27,9 @@ export function initWS(server : HttpServer){
             return;
         }
 
-        //create a temp in current directory okay outside the src folder okay
-        await fetchS3Folder(`code/${replId}`,path.join(__dirname,`../tmp/${replId}`));
         socket.emit("loaded",{
-            rootContent: await fetchDir(path.join(__dirname,`../tmp/${replId}`)),
+            //this will have some change that we'd have to see
+            rootContent: await fetchDir("/workspace",""),
         })
 
         socket.on("disconnect", () => {
@@ -46,27 +47,26 @@ function initHandlers(socket: Socket, replId: string) {
         console.log("Client disconnected");
     });
 
-    //fetchContent
-    socket.on("fetchContent", async ({ path: filePath }: { path: string }, callback) => {
-        const fullPath = path.join(filePath);
-        const data = await fetchFile(fullPath);
-        callback(data);
+    //fetchDir
+    socket.on("fetchDir",async (dir: string,callback) =>{
+        console.log("Fetching directory:", dir);
+        const dirPath = `/workspace/${dir}`;
+        const content = await fetchDir(dirPath, dir);
+        callback(content);
     });
 
-
-    //fetchDir
-    socket.on("fetchDir",async (dirPath: string,callback) =>{
-        console.log("Fetching directory:", dirPath);
-        const content = await fetchDir(path.join(dirPath));
-        callback(content);
+    //fetchContent
+    socket.on("fetchContent", async ({ path: filePath }: { path: string }, callback) => {
+        const fullPath = `/workspace/${filePath}`;
+        //will take fetch file content instead okay
+        const data = await fetchFileContent(fullPath);
+        callback(data);
     });
 
     //updateContent
     socket.on("updateContent", async ({ path: filePath, content }: { path: string, content: string }) => {
-        const fullPath = path.join(filePath);
-        console.log("Saving file:", fullPath);
+        const fullPath = `/workspace/${filePath}`;
         await saveFile(fullPath, content);
-        console.log("Saved file:", fullPath);
         await saveToS3(`code/${replId}`, filePath, content);
     });
 

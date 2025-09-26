@@ -1,0 +1,110 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  # Using 'forcarfor' as the service name based on your error logs
+  name: forcarfor
+  labels:
+    app: forcarfor
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: forcarfor
+  template:
+    metadata:
+      labels:
+        app: forcarfor
+    spec:
+      volumes:
+        - name: workspace-volume
+          emptyDir: {}
+      initContainers:
+        - name: copy-s3-resources
+          image: amazon/aws-cli
+          command: ["/bin/sh", "-c"]
+          args:
+            - >
+              aws s3 cp s3://perplexedfor/code/forcarfor/ /workspace/ --recursive &&
+              echo "Resources copied from S3";
+          env:
+            - name: AWS_ACCESS_KEY_ID
+              value: <orig>
+            - name: AWS_SECRET_ACCESS_KEY
+              value: <orig>
+          volumeMounts:
+            - name: workspace-volume
+              mountPath: /workspace
+      containers:
+        - name: runner
+          # BEST PRACTICE: Use a specific version tag instead of 'latest'
+          # Make sure you build and push an image with this tag.
+          image: perplexedfor/runner:latest
+          ports:
+            - containerPort: 3001
+            - containerPort: 3000
+          volumeMounts:
+            - name: workspace-volume
+              mountPath: /workspace
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: forcarfor
+spec:
+  selector:
+    app: forcarfor
+  ports:
+    - protocol: TCP
+      name: ws
+      port: 3001
+      targetPort: 3001
+    - protocol: TCP
+      name: user
+      port: 3000
+      targetPort: 3000
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: forcarfor
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    # CORS annotations to allow requests from your local frontend
+    nginx.ingress.kubernetes.io/cors-allow-origin: "http://localhost:5173"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "GET, PUT, POST, DELETE, OPTIONS"
+    nginx.ingress.kubernetes.io/cors-allow-credentials: "true"
+    # Annotations to support WebSocket connections for Socket.IO
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    # === FIX STARTS HERE ===
+    # Disable proxy buffering for long-lived WebSocket connections
+    nginx.ingress.kubernetes.io/proxy-buffering: "off"
+    # === FIX ENDS HERE ===
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - forcarfor.dir.nebulou.dev
+        - forcarfor.ser.nebulou.dev
+  rules:
+  - host: forcarfor.dir.nebulou.dev
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: forcarfor
+            port:
+              number: 3001
+  - host: forcarfor.ser.nebulou.dev
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: forcarfor
+            port:
+              number: 3000

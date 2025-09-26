@@ -60,8 +60,8 @@ export function sortFile(a: File, b: File): number {
 
 export function buildFileTree(data: RemoteFile[]): Directory {
     // This regex identifies the project's root directory path based on the hardcoded structure.
-    // It matches paths like /home/perplexedfor/code/bpt/badcode/backend/tmp/{any_replId}
-    const projectRootRegex = /^\/home\/perplexedfor\/code\/bpt\/badcode\/backend\/tmp\/[^/]+$/;
+    // It matches paths like /home/perplexedfor/code/bpt/rmeV1/backend/tmp/{any_replId}
+    const projectRootRegex = /^\/home\/perplexedfor\/code\/bpt\/rmeV1\/backend\/tmp\/[^/]+$/;
 
     // A cache to hold all created nodes (files and directories) for quick lookup by their path (ID).
     const cache = new Map<string, Directory | File>();

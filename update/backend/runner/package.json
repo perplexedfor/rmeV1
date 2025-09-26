@@ -1,23 +1,25 @@
 {
-  "name": "init-sw",
+  "name": "runner",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc -b",
+    "start": "node dist/index.js"
   },
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.890.0",
+    "@aws-sdk/client-s3": "^3.892.0",
     "@types/express": "^5.0.3",
-    "@types/node": "^24.5.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.2",
     "express": "^5.1.0",
+    "node-pty": "^1.0.0",
+    "path": "^0.12.7",
+    "socket.io": "^4.8.1",
+    "ts-node": "^10.9.2",
     "typescript": "^5.9.2"
-  },
-  "devDependencies": {
-    "@types/cors": "^2.8.19"
   }
 }

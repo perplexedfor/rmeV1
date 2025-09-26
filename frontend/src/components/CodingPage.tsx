@@ -68,6 +68,7 @@ export const CodingPage = () => {
       if(socket){
         socket.on('loaded', ({ rootContent } : { rootContent: RemoteFile[]}) => {
           setLoaded(true);
+          console.log("loaded the files");
           setFileStructure(rootContent);
         });
       }
@@ -94,7 +95,7 @@ export const CodingPage = () => {
           });
         });
       }else{
-        console.log(file.path);
+        console.log("Hi",file.path);
 
         socket?.emit('fetchContent', { path: file.path }, (data: string) => {
           file.content = data; // Update the file content
